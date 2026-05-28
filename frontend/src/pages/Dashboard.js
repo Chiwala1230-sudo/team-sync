@@ -5,7 +5,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import { 
   FolderKanban, Users, CheckSquare, Calendar, 
-  Search, Bell, Plus, ChevronLeft, Menu, X, 
+  Search, Plus, ChevronLeft, Menu, X, 
   TrendingUp, UserPlus, Trash2, 
   CheckCircle2, Circle, Sparkles, 
   Send, FileCheck, Paperclip, MessageCircle,
@@ -362,9 +362,7 @@ function Dashboard() {
         completedChecklist += task.checklist.filter(c => c.is_completed).length;
       }
       if (task.is_completed || task.status === 'done') {
-        if (task.checklist && task.checklist.length > 0) {
-          // Already counted via checklist
-        } else {
+        if (!task.checklist || task.checklist.length === 0) {
           completedChecklist += 1;
           totalChecklist += 1;
         }
@@ -588,7 +586,7 @@ function Dashboard() {
                                 <div className="task-files">
                                   <div>📎 Attachments ({taskFiles[task.id].length})</div>
                                   <div className="task-files-list">
-                                    {taskFiles[task.id].map(f => <a key={f.id} href={`http://localhost:5000${f.file_url}`} target="_blank" className="task-file">📄 {f.comment?.substring(0, 30)}</a>)}
+                                    {taskFiles[task.id].map(f => <a key={f.id} href={`http://localhost:5000${f.file_url}`} target="_blank" rel="noreferrer" className="task-file">📄 {f.comment?.substring(0, 30)}</a>)}
                                   </div>
                                 </div>
                               )}
@@ -633,7 +631,6 @@ function Dashboard() {
         )}
       </main>
 
-      {/* Modals */}
       <AnimatePresence>
         {showProjectModal && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="modal" onClick={() => setShowProjectModal(false)}><motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="modal-content" onClick={e => e.stopPropagation()}><div className="modal-header"><h2>New Project</h2><button onClick={() => setShowProjectModal(false)}>×</button></div><form onSubmit={handleCreateProject}><input type="text" placeholder="Project name" value={newProject.name} onChange={e => setNewProject({...newProject, name: e.target.value})} required /><textarea placeholder="Description" rows="3" value={newProject.description} onChange={e => setNewProject({...newProject, description: e.target.value})} /><input type="date" value={newProject.deadline} onChange={e => setNewProject({...newProject, deadline: e.target.value})} /><div className="modal-footer"><button type="button" onClick={() => setShowProjectModal(false)}>Cancel</button><button type="submit">Create</button></div></form></motion.div></motion.div>}
       </AnimatePresence>
@@ -742,19 +739,11 @@ function Dashboard() {
         .invite-icon { width: 56px; height: 56px; background: rgba(139,92,246,0.15); border-radius: 18px; display: flex; align-items: center; justify-content; center; font-size: 24px; color: #8b5cf6; }
         .invite-title { font-size: 16px; font-weight: 600; color: white; }
         .invite-subtitle { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-        
-        /* Tasks Layout - Fixed */
         .tasks-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
         .kanban-container { flex: 2; min-width: 300px; overflow-x: auto; }
         .chat-panel, .friends-panel { width: 320px; background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(139,92,246,0.2); border-radius: 20px; transition: 0.3s; flex-shrink: 0; }
         .chat-panel.closed, .friends-panel.closed { width: 50px; }
-        
-        @media (max-width: 1400px) {
-            .tasks-layout { flex-direction: column; }
-            .chat-panel, .friends-panel { width: 100%; }
-            .chat-panel.closed, .friends-panel.closed { width: 100%; height: 56px; }
-        }
-        
+        @media (max-width: 1400px) { .tasks-layout { flex-direction: column; } .chat-panel, .friends-panel { width: 100%; } .chat-panel.closed, .friends-panel.closed { width: 100%; height: 56px; } }
         .kanban { display: flex; gap: 20px; padding-bottom: 10px; }
         .kanban-col { min-width: 320px; background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(139,92,246,0.15); border-radius: 20px; padding: 16px; }
         .kanban-header { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; margin-bottom: 16px; background: rgba(255,255,255,0.02); }
@@ -787,7 +776,6 @@ function Dashboard() {
         .task-files { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(139,92,246,0.1); font-size: 11px; color: #94a3b8; }
         .task-files-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
         .task-file { font-size: 10px; color: #60a5fa; text-decoration: none; background: rgba(96,165,250,0.1); padding: 3px 10px; border-radius: 14px; }
-        
         .chat-header, .friends-header { display: flex; justify-content: space-between; padding: 14px; border-bottom: 1px solid rgba(139,92,246,0.1); }
         .chat-header h3, .friends-header h3 { display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin: 0; }
         .chat-toggle, .friends-toggle { background: rgba(255,255,255,0.05); border: none; border-radius: 8px; padding: 4px 8px; cursor: pointer; color: #94a3b8; }
@@ -827,7 +815,6 @@ function Dashboard() {
         .modal-footer button:first-child { padding: 10px 20px; background: rgba(255,255,255,0.05); border: none; border-radius: 12px; color: #94a3b8; cursor: pointer; }
         .modal-footer button:last-child { padding: 10px 24px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer; }
         .modal-hint { font-size: 11px; color: #64748b; margin-top: -8px; }
-        
         @media (max-width: 1024px) {
           .kanban { flex-direction: column; }
           .kanban-col { min-width: 100%; }
