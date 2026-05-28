@@ -5,7 +5,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import { 
   FolderKanban, Users, CheckSquare, Calendar, 
-  Search, Plus, ChevronLeft, Menu, X, 
+  Search, Bell, Plus, ChevronLeft, Menu, X, 
   TrendingUp, UserPlus, Trash2, 
   CheckCircle2, Circle, Sparkles, 
   Send, FileCheck, Paperclip, MessageCircle,
@@ -13,12 +13,12 @@ import {
 } from 'lucide-react';
 import { 
   getMe, getProjects, createProject, deleteProject, 
-  getTasks, createTask, deleteTask, 
+  getTasks, createTask, updateTask, deleteTask, 
   uploadFile, getTaskFiles, getProjectMembers, 
   addProjectMember, removeProjectMember,
   getChatMessages, sendChatMessage,
   submitProject, getSubmissionStatus,
-  getFriendSuggestions, sendFriendRequest, getPendingRequests, acceptFriendRequest
+  getFriendSuggestions, sendFriendRequest, getPendingRequests, acceptFriendRequest, getFriends
 } from '../services/api';
 
 const socket = io('http://localhost:5000');
@@ -48,14 +48,17 @@ function Dashboard() {
   const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Chat state
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [chatPanelOpen, setChatPanelOpen] = useState(true);
   const messagesEndRef = useRef(null);
   
+  // Checklist state
   const [newChecklistItem, setNewChecklistItem] = useState('');
   const [showChecklistInput, setShowChecklistInput] = useState(null);
   
+  // Friends state
   const [suggestions, setSuggestions] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [friendPanelOpen, setFriendPanelOpen] = useState(true);
@@ -197,12 +200,14 @@ function Dashboard() {
 
   const handleUpdateTaskStatus = async (taskId, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/tasks/${taskId}`, 
+      const response = await axios.put(`http://localhost:5000/api/tasks/${taskId}`, 
         { status: newStatus },
         { headers: { 'x-auth-token': localStorage.getItem('token') } }
       );
-      await loadTasks(selectedProject.id);
-      loadData();
+      if (response.data.success) {
+        await loadTasks(selectedProject.id);
+        loadData();
+      }
     } catch (err) { 
       console.error('Error updating task:', err);
       alert('Failed to update task status'); 
@@ -212,7 +217,7 @@ function Dashboard() {
   const handleToggleTaskComplete = async (taskId, isCompleted) => {
     try {
       await axios.put(`http://localhost:5000/api/tasks/${taskId}`, 
-        { is_completed: isCompleted },
+        { is_completed: isCompleted, status: isCompleted ? 'done' : 'todo' },
         { headers: { 'x-auth-token': localStorage.getItem('token') } }
       );
       await loadTasks(selectedProject.id);
@@ -350,6 +355,15 @@ function Dashboard() {
     if (!userId) return 'Unassigned';
     const member = members.find(m => m.id === userId);
     return member?.name || 'Unknown';
+  };
+
+  const getPriorityConfig = (priority) => {
+    switch(priority) {
+      case 'high': return { label: 'High', icon: '🔴', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' };
+      case 'medium': return { label: 'Medium', icon: '🟡', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' };
+      case 'low': return { label: 'Low', icon: '🟢', color: '#22c55e', bg: 'rgba(34,197,94,0.15)' };
+      default: return { label: 'Medium', icon: '🟡', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' };
+    }
   };
 
   const calculateProjectProgress = (projectTasks) => {
